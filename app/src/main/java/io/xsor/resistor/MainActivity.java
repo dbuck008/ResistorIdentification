@@ -21,12 +21,14 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 
 import static org.opencv.core.Core.addWeighted;
 import static org.opencv.core.Core.rectangle;
 import static org.opencv.imgproc.Imgproc.COLOR_BGR2GRAY;
+import static org.opencv.imgproc.Imgproc.COLOR_BGR2HSV;
 import static org.opencv.imgproc.Imgproc.THRESH_BINARY;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 import static org.opencv.imgproc.Imgproc.threshold;
@@ -36,8 +38,6 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     final static String TAG = "Main Activity";
 
     private CameraView mOpenCvCameraView;
-    private Button getFrame;
-
     private int rectangleHeight;
     private int rectangleWidth;
 
@@ -51,14 +51,6 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setOnTouchListener(this);
-
-
-        getFrame = (Button) findViewById(R.id.getFrame);
-        getFrame.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-            }
-        });
 
         rectangleHeight = dpToPx(35);
         rectangleWidth = dpToPx(60);
@@ -119,14 +111,20 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
         Mat frame = inputFrame.rgba();
         Mat frameCopy = new Mat();
-        frame.copyTo(frameCopy);
-        Point tl = new Point(frame.size().width/2-rectangleWidth/2,frame.size().height/2-rectangleHeight/2);
-        Point br = new Point(frame.size().width/2+rectangleWidth/2,frame.size().height/2+rectangleHeight/2);
+        double width = frame.size().width;
+        double height = frame.size().height;
         //cvtColor(frame,frame,COLOR_BGR2GRAY);
-        rectangle(frameCopy,tl,br, new Scalar(255,255,255),-1);
+        //cvtColor(frame,frame,COLOR_BGR2HSV);
+        frame.copyTo(frameCopy);
+        Point tl = new Point(width/2-rectangleWidth/2,height/2-rectangleHeight/2);
+        Point br = new Point(width/2+rectangleWidth/2,height/2+rectangleHeight/2);
+        rectangle(frameCopy, tl, br, new Scalar(255, 255, 255), -1);
         double alpha = 0.3;
         addWeighted(frameCopy, alpha, frame,1.0-alpha,0,frameCopy);
-
+        Rect roi = new Rect((int)width/2-rectangleWidth/2,(int)height/2-rectangleHeight/2,rectangleWidth,rectangleHeight);
+        Mat frameROI = new Mat(frame, roi);
+        Rect roiLine = new Rect(0,rectangleHeight/2,rectangleWidth,1);
+        Mat frameROILine = new Mat(frameROI,roiLine);
         return frameCopy;
     }
 
