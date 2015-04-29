@@ -2,6 +2,7 @@ package io.xsor.resistor;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -24,13 +25,28 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.opencv.core.Core.addWeighted;
+import static org.opencv.core.Core.inRange;
 import static org.opencv.core.Core.rectangle;
-import static org.opencv.imgproc.Imgproc.COLOR_BGR2GRAY;
+import static org.opencv.core.Core.vconcat;
+import static org.opencv.highgui.Highgui.imwrite;
 import static org.opencv.imgproc.Imgproc.COLOR_BGR2HSV;
+import static org.opencv.imgproc.Imgproc.COLOR_BGR2HSV_FULL;
+import static org.opencv.imgproc.Imgproc.COLOR_HSV2RGB;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2HSV;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2HSV_FULL;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2RGBA;
+import static org.opencv.imgproc.Imgproc.COLOR_RGBA2BGR;
+import static org.opencv.imgproc.Imgproc.COLOR_RGBA2RGB;
 import static org.opencv.imgproc.Imgproc.THRESH_BINARY;
 import static org.opencv.imgproc.Imgproc.cvtColor;
+import static org.opencv.imgproc.Imgproc.filter2D;
 import static org.opencv.imgproc.Imgproc.threshold;
 
 public class MainActivity extends AppCompatActivity implements CvCameraViewListener2, View.OnTouchListener {
@@ -40,6 +56,16 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     private CameraView mOpenCvCameraView;
     private int rectangleHeight;
     private int rectangleWidth;
+
+    private final static int RED_MINL = 0 / 2;   // Divide by 2 since HSV ranges from 0 to 180.
+    private final static int RED_MAXL = 30 / 2;
+    private final static int RED_MINU = 330 / 2;   // Divide by 2 since HSV ranges from 0 to 180.
+    private final static int RED_MAXU = 360 / 2;
+    Scalar redLBL = new Scalar(RED_MINL, 0, 30);
+    Scalar redUBL = new Scalar(RED_MAXL, 255, 255);
+    Scalar redLBU = new Scalar(RED_MINU, 0, 30);
+    Scalar redUBU = new Scalar(RED_MAXU, 255, 255);
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,13 +79,12 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         mOpenCvCameraView.setOnTouchListener(this);
 
         rectangleHeight = dpToPx(35);
-        rectangleWidth = dpToPx(60);
+        rectangleWidth = dpToPx(50);
 
     }
 
     @Override
     public boolean onTouch(View arg0, MotionEvent arg1) {
-        // TODO Auto-generated method stub
         mOpenCvCameraView.focusOnTouch(arg1);
         return true;
     }
@@ -72,7 +97,8 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
                 {
                     Log.i(TAG, "OpenCV loaded successfully");
                     mOpenCvCameraView.enableView();
-                    mOpenCvCameraView.flashOn(false);
+                    //mOpenCvCameraView.flashOn(false);
+                    //mOpenCvCameraView.setFlashMode(getBaseContext(),4);
                 } break;
                 default:
                 {
@@ -110,11 +136,13 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
 
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
         Mat frame = inputFrame.rgba();
+        //Mat frameRGB = new Mat();
+        //Mat frameHSV = new Mat();
         Mat frameCopy = new Mat();
+        //cvtColor(frame,frameRGB,COLOR_RGBA2RGB);
+        //cvtColor(frameRGB, frameHSV, COLOR_RGB2HSV);
         double width = frame.size().width;
         double height = frame.size().height;
-        //cvtColor(frame,frame,COLOR_BGR2GRAY);
-        //cvtColor(frame,frame,COLOR_BGR2HSV);
         frame.copyTo(frameCopy);
         Point tl = new Point(width/2-rectangleWidth/2,height/2-rectangleHeight/2);
         Point br = new Point(width/2+rectangleWidth/2,height/2+rectangleHeight/2);
@@ -125,10 +153,55 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         Mat frameROI = new Mat(frame, roi);
         Rect roiLine = new Rect(0,rectangleHeight/2,rectangleWidth,1);
         Mat frameROILine = new Mat(frameROI,roiLine);
+        Mat frameROILineHSV = new Mat();
+        Mat frameROILineRGB = new Mat();
+        cvtColor(frameROILine, frameROILineRGB,COLOR_RGBA2RGB,3);
+        cvtColor(frameROILineRGB, frameROILineHSV, COLOR_RGB2HSV,3);
+
+        SaveImage(frameROILine,"r");
+
+        String hValues = "";
+        String sValues = "";
+        String vValues = "";
+
+        for(int i = 0; i < frameROILineHSV.size().width; i++ ) {
+            double[] HSV = frameROILineHSV.get(0,i);
+            hValues += " " + HSV[0];
+            sValues += " " + HSV[1];
+            vValues += " " + HSV[2];
+        }
+
+
+
+
+
+        Log.d(TAG, "hValues: " + hValues);
+        Log.d("", "");
+        Log.d(TAG, "sValues: " + sValues);
+        Log.d("","");
+        Log.d(TAG ,"vValues: " + vValues);
+
         return frameCopy;
     }
 
-    @Override
+    public void SaveImage (Mat mat, String filename) {
+        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        filename = filename + ".png";
+        File file = new File(path, filename);
+
+        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGBA2BGR);
+
+        Boolean bool;
+        filename = file.toString();
+        bool = imwrite(filename, mat);
+
+        if (bool)
+            Log.d(TAG, "SUCCESS Save: " + path + filename);
+        else
+            Log.d(TAG, "Fail writing image to external storage");
+    }
+
+    /*@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
@@ -148,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         }
 
         return super.onOptionsItemSelected(item);
-    }
+    }*/
 
     public int dpToPx(int dp) {
         DisplayMetrics displayMetrics = getBaseContext().getResources().getDisplayMetrics();
