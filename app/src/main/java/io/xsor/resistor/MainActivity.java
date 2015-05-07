@@ -62,14 +62,14 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
 //            { 71, 53, 38 }, // brown
             { 180, 20, 53 }, // red
 //            { 160, 90, 50 }, // orange
-            { 157, 123, 39 }, // yellow
+//            { 157, 123, 39 }, // yellow
             { 41, 90, 46 }, // green
 //            { 40, 73, 86 }, // blue
-            { 75, 55, 75 }, // violet
+//            { 75, 55, 75 }, // violet
 //            { 73, 65, 62 }, // gray
             { 200, 200, 200 } // white
     };
-    private int WHITE = 5;
+    private int WHITE = 3;
     private int LINE_SIZE = 137;
     private boolean filter = true;
 
@@ -233,19 +233,21 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
             GaussianBlur(image, image, size, 0);
         }
 
+        // colorize the image
+        // Makes the elements go from RGB to COLOR where COLOR is 0-WHITE (0-5 for demo)
         int [] newImage = new int[(int)image.size().width];
         for(int i = 0; i < image.size().width; i++){
             newImage[i] = (int) findColor(image.get(0,i));
         }
 
+        // threshold the image to find edges more accurately and then average
+        int [] threshholdImage = threshold(newImage, WHITE);
+
         // take derivative and threshold image clearly define edges
-        int[] derivativeImage = imageDerivative(newImage, FIRST_DERIVATIVE);
+        int[] derivativeImage = imageDerivative(threshholdImage, FIRST_DERIVATIVE);
 
         // find position of edges as pixel cord.
         int[] edgePositions = segmentBands(derivativeImage);
-
-        // TODO:
-        // scan edge positions and check changes - remove local changes (within 5 pixels)
 
         // find average pixel color between edge locations
         int [] bandValues = new int[edgePositions.length + 1];
@@ -291,7 +293,6 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
 
         runOnUiThread(new Runnable() {
             public void run() {
-                //* The Complete ProgressBar does not appear**/
                 resistorValueText.setText("" + resistorValue);
             }
         });
@@ -388,7 +389,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
      *	result: binary image
      */
     public int[] threshold(final int[] image, int threshold){
-        int[] result = image;
+        int[] result = new int[image.length];
 
         for(int i = 0; i < image.length; i++){
             if(image[i] < threshold){
