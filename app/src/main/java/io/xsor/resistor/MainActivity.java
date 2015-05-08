@@ -60,17 +60,16 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     static double colorRGBValues[][] = {
             { 48, 40, 20 }, // black
             { 71, 53, 38 }, // brown
-            { 190, 20, 30 }, // red
-            { 160, 90, 50 }, // orange
+            { 160, 10, 30 }, // red
+            { 200, 50, 40 }, // orange
             { 157, 123, 39 }, // yellow
             { 41, 90, 46 }, // green
             { 25, 84, 140 }, // blue
             { 67, 36, 65 }, // violet
             { 73, 65, 62 }, // gray
-            { 200, 200, 200 } // white
+            { 106, 85, 58 } // background (tan)
     };
-    private int WHITE = colorRGBValues.length-1;
-    private int LINE_SIZE = 137;
+    private int BACKGROUND = colorRGBValues.length-1;
     private boolean filter = true;
 
     @Override
@@ -96,8 +95,8 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         band9= (TextView) findViewById(R.id.band9);
         band10= (TextView) findViewById(R.id.band10);
 
-        rectangleHeight = dpToPx(35);
-        rectangleWidth = dpToPx(50);
+        rectangleHeight = dpToPx(10);
+        rectangleWidth = dpToPx(25);
     }
 
     @Override
@@ -226,14 +225,14 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         }
 
         // colorize the image
-        // Makes the elements go from RGB to COLOR where COLOR is 0-WHITE (0-5 for demo)
+        // Makes the elements go from RGB to COLOR where COLOR is 0-BACKGROUND (0-5 for demo)
         int [] newImage = new int[(int)image.size().width];
         for(int i = 0; i < image.size().width; i++){
             newImage[i] = (int) findColor(image.get(0,i));
         }
 
         // threshold the image to find edges more accurately and then average
-        int [] threshholdImage = threshold(newImage, WHITE);
+        int [] threshholdImage = threshold(newImage, BACKGROUND);
 
         // take derivative and threshold image clearly define edges
         int[] derivativeImage = imageDerivative(threshholdImage, FIRST_DERIVATIVE);
@@ -249,7 +248,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
                 if(i == 0){
                     bandValues[i] = averageArray(Arrays.copyOfRange(newImage, 0, edgePositions[0])); // first band
                 }else{
-                    bandValues[i] = averageArray(Arrays.copyOfRange(newImage, edgePositions[i-1], edgePositions[i])); // get all values between to edges
+                    bandValues[i] = averageArray(Arrays.copyOfRange(newImage, edgePositions[i-1], edgePositions[i])); // get all values between two edges
                 }
             }
             bandValues[i] = averageArray(Arrays.copyOfRange(newImage, edgePositions[i-1], newImage.length)); // last band
@@ -259,7 +258,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         int uniqueBands = 1;
         for(int i = 1; i < bandValues.length; i++){
             if(bandValues[i-1] != bandValues[i]){
-                if(bandValues[i] != WHITE){
+                if(bandValues[i] != BACKGROUND){
                     uniqueBands++;
                 }
             }
@@ -269,8 +268,8 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         int input = -1;
         final int[] resBands = new int[uniqueBands+1];
         for(int i = 0; i < bandValues.length; i++){
-            if(bandValues[i] != WHITE){
-                if(bandValues[i] != lastInputValue || bandValues[i - 1] == WHITE){
+            if(bandValues[i] != BACKGROUND){
+                if(bandValues[i] != lastInputValue || bandValues[i - 1] == BACKGROUND){
                     lastInputValue = bandValues[i];
                     resBands[++input] = bandValues[i];
                 }
@@ -347,7 +346,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
      *	averageImage: Mat of calculated derivative values for each pixel using method @param{method}
      */
     public int[] imageDerivative(final int[] image, int method){
-        int[] imageDerivative = new int[LINE_SIZE];
+        int[] imageDerivative = new int[image.length];
 
         // scan every pixel and determine change in gradient using 1st derivative
         // ignore first and last pixel
@@ -396,7 +395,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
      */
     public int[] segmentBands(final int[] image){
 //        int[] threshold = threshold(image, 10); // play around with this number until we like the results
-        int[] bandEdges = new int[LINE_SIZE]; // must change if planing on scaling
+        int[] bandEdges = new int[image.length]; // must change if planing on scaling
         int edgeCount = 0;
 
         // find location of edges
