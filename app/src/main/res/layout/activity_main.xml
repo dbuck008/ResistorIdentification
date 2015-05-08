@@ -99,7 +99,8 @@
         android:id="@+id/resistorValue"
         android:text="TEST"
         android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"/>
+        android:layout_alignParentBottom="true"
+        android:background="#FFFFFF"/>
 
 
 </RelativeLayout>

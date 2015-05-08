@@ -58,18 +58,18 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     Scalar redUBU = new Scalar(RED_MAXU, 255, 255);
 
     static double colorRGBValues[][] = {
-            { 20, 20, 20 }, // black
-//            { 71, 53, 38 }, // brown
-            { 180, 20, 53 }, // red
-//            { 160, 90, 50 }, // orange
-//            { 157, 123, 39 }, // yellow
+            { 48, 40, 20 }, // black
+            { 71, 53, 38 }, // brown
+            { 190, 20, 30 }, // red
+            { 160, 90, 50 }, // orange
+            { 157, 123, 39 }, // yellow
             { 41, 90, 46 }, // green
-//            { 40, 73, 86 }, // blue
-//            { 75, 55, 75 }, // violet
-//            { 73, 65, 62 }, // gray
+            { 25, 84, 140 }, // blue
+            { 67, 36, 65 }, // violet
+            { 73, 65, 62 }, // gray
             { 200, 200, 200 } // white
     };
-    private int WHITE = 3;
+    private int WHITE = colorRGBValues.length-1;
     private int LINE_SIZE = 137;
     private boolean filter = true;
 
@@ -95,7 +95,6 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         band8= (TextView) findViewById(R.id.band8);
         band9= (TextView) findViewById(R.id.band9);
         band10= (TextView) findViewById(R.id.band10);
-
 
         rectangleHeight = dpToPx(35);
         rectangleWidth = dpToPx(50);
@@ -189,13 +188,6 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
             vValues += " " + HSV[2];
         }
 
-//        Log.d(TAG, "hValues: " + hValues);
-//        Log.d("", "");
-//        Log.d(TAG, "sValues: " + sValues);
-//        Log.d("","");
-//        Log.d(TAG ,"vValues: " + vValues);
-
-
         doMagic(frameROILine);
 
         return frameCopy;
@@ -262,8 +254,8 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
             }
             bandValues[i] = averageArray(Arrays.copyOfRange(newImage, edgePositions[i-1], newImage.length)); // last band
         }
-        Log.e(TAG, "Band Values: " + Arrays.toString(bandValues));
 
+        // determine how many bands there are
         int uniqueBands = 1;
         for(int i = 1; i < bandValues.length; i++){
             if(bandValues[i-1] != bandValues[i]){
@@ -274,10 +266,9 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         }
 
         int lastInputValue = 255;
-        int input = 0;
+        int input = -1;
         final int[] resBands = new int[uniqueBands+1];
-        resBands[0] = bandValues[0];
-        for(int i = 1; i < bandValues.length; i++){
+        for(int i = 0; i < bandValues.length; i++){
             if(bandValues[i] != WHITE){
                 if(bandValues[i] != lastInputValue || bandValues[i - 1] == WHITE){
                     lastInputValue = bandValues[i];
@@ -286,7 +277,6 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
             }
         }
 
-        Log.e(TAG, "Unique Bands: " + Arrays.toString(resBands));
 
         // calc value
         final double resistorValue = calcResValue(resBands);
@@ -296,9 +286,6 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
                 resistorValueText.setText("" + resistorValue);
             }
         });
-
-        Log.e(TAG, "RESISTOR VALUE: " + resistorValue);
-        Log.e(TAG, "***********************************");
 
         return resistorValue;
     }
